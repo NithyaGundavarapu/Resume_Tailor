@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import pathlib
 import anthropic
@@ -6,7 +7,6 @@ import streamlit as st
 SECRETS_FILE = pathlib.Path(".streamlit/secrets.toml")
 
 def load_saved_key() -> str:
-    """Return API key from env var, then secrets.toml, then empty string."""
     key = os.environ.get("ANTHROPIC_API_KEY", "")
     if key:
         return key
@@ -16,9 +16,11 @@ def load_saved_key() -> str:
         return ""
 
 def persist_key(key: str) -> None:
-    """Write key to .streamlit/secrets.toml so it survives restarts."""
-    SECRETS_FILE.parent.mkdir(exist_ok=True)
-    SECRETS_FILE.write_text(f'ANTHROPIC_API_KEY = "{key}"\n', encoding="utf-8")
+    try:
+        SECRETS_FILE.parent.mkdir(exist_ok=True)
+        SECRETS_FILE.write_text(f'ANTHROPIC_API_KEY = "{key}"\n', encoding="utf-8")
+    except OSError:
+        pass  # read-only filesystem on Streamlit Cloud — key is already in st.secrets
 
 st.set_page_config(page_title="Resume Tailor AI", page_icon="✦", layout="centered")
 
