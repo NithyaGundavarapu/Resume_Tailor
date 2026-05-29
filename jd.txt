@@ -1,0 +1,35 @@
+Here's the full JD extracted from your screenshots:
+
+Data Analyst — Sudhanand Group
+Bengaluru, Karnataka, India
+
+About the Position
+Seeking a detail-oriented and analytical Data Analyst with expertise in Python, SQL, Excel, VBA, BI tools, and AI/ML techniques. The ideal candidate will have a solid background in data collection, processing, analysis, and visualization, along with the ability to apply machine learning and AI methods to support data-driven decision-making across business functions.
+
+Key Responsibilities
+
+Collect, clean, and process structured and unstructured data from various internal and external sources
+Analyze datasets to identify trends, correlations, and actionable insights
+Use SQL for data extraction, transformation, and manipulation
+Automate repetitive data tasks using Python and VBA
+Create dynamic dashboards and visual reports using Tableau, Power BI, or other BI tools
+Collaborate with stakeholders to gather requirements and deliver customized analytical solutions
+Ensure data accuracy, consistency, and integrity across reporting systems
+Apply AI/ML techniques for predictive analysis, forecasting, and advanced statistical modeling
+Provide support for data-driven strategies including anomaly detection, recommendation systems, and process optimization
+
+
+Qualifications
+
+Bachelor's degree in Statistics, Mathematics, Computer Science, or a related field
+Strong proficiency in Python and Excel, including advanced functions and macros
+Hands-on experience in SQL for querying and managing databases
+Experience with VBA scripting for task automation in Excel
+Proficient in at least one BI tool (Tableau or Power BI)
+Excellent analytical thinking, attention to detail, and communication skills
+Knowledge of AI/ML algorithms and libraries (scikit-learn, TensorFlow, PyTorch) and their application in business context
+
+
+Required Skills: Python, SQL, Excel, VBA, BI tools, AI/ML techniques
+Preferred Skills: Tableau or Power BI experience, Machine learning libraries
+Salary: Not disclosed
