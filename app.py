@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
+import re
+from io import BytesIO
 import anthropic
 import streamlit as st
 from pypdf import PdfReader
@@ -14,6 +16,40 @@ def extract_text(uploaded_file) -> str:
         doc = Document(uploaded_file)
         return "\n".join(p.text for p in doc.paragraphs)
     return uploaded_file.read().decode("utf-8")
+
+BOLD_RE = re.compile(r"\*\*(.+?)\*\*")
+
+def _add_markdown_paragraph(doc, text, style=None):
+    p = doc.add_paragraph(style=style)
+    pos = 0
+    for m in BOLD_RE.finditer(text):
+        if m.start() > pos:
+            p.add_run(text[pos:m.start()])
+        p.add_run(m.group(1)).bold = True
+        pos = m.end()
+    if pos < len(text):
+        p.add_run(text[pos:])
+    return p
+
+def markdown_to_docx_bytes(markdown_text: str) -> bytes:
+    doc = Document()
+    for line in markdown_text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            doc.add_paragraph()
+        elif stripped.startswith("### "):
+            _add_markdown_paragraph(doc, stripped[4:], style="Heading 3")
+        elif stripped.startswith("## "):
+            _add_markdown_paragraph(doc, stripped[3:], style="Heading 2")
+        elif stripped.startswith("# "):
+            _add_markdown_paragraph(doc, stripped[2:], style="Heading 1")
+        elif stripped.startswith(("- ", "* ")):
+            _add_markdown_paragraph(doc, stripped[2:], style="List Bullet")
+        else:
+            _add_markdown_paragraph(doc, stripped)
+    buf = BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
 
 def load_saved_key() -> str:
     key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -391,7 +427,7 @@ elif step == 3:
 
         st.markdown("<div style='margin-top:1.5rem;'></div>", unsafe_allow_html=True)
 
-        col_back, _, col_dl = st.columns([1, 2, 1])
+        col_back, col_dl_md, col_dl_docx = st.columns([1, 1, 1])
         with col_back:
             if st.button("← Start Over", use_container_width=True):
                 for k in ["last_output", "needs_generation",
@@ -400,11 +436,19 @@ elif step == 3:
                     st.session_state.pop(k, None)
                 st.session_state["step"] = 1
                 st.rerun()
-        with col_dl:
+        with col_dl_md:
             st.download_button(
-                "⬇️ Download",
+                "⬇️ Markdown",
                 data=output,
                 file_name="tailored_resume.md",
                 mime="text/markdown",
+                use_container_width=True,
+            )
+        with col_dl_docx:
+            st.download_button(
+                "⬇️ Word (.docx)",
+                data=markdown_to_docx_bytes(output),
+                file_name="tailored_resume.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True,
             )
