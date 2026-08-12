@@ -1,10 +1,19 @@
 # -*- coding: utf-8 -*-
 import os
-import pathlib
 import anthropic
 import streamlit as st
+from pypdf import PdfReader
+from docx import Document
 
-SECRETS_FILE = pathlib.Path(".streamlit/secrets.toml")
+def extract_text(uploaded_file) -> str:
+    name = uploaded_file.name.lower()
+    if name.endswith(".pdf"):
+        reader = PdfReader(uploaded_file)
+        return "\n".join(page.extract_text() or "" for page in reader.pages)
+    if name.endswith(".docx"):
+        doc = Document(uploaded_file)
+        return "\n".join(p.text for p in doc.paragraphs)
+    return uploaded_file.read().decode("utf-8")
 
 def load_saved_key() -> str:
     key = os.environ.get("ANTHROPIC_API_KEY", "")
@@ -14,13 +23,6 @@ def load_saved_key() -> str:
         return st.secrets.get("ANTHROPIC_API_KEY", "")
     except Exception:
         return ""
-
-def persist_key(key: str) -> None:
-    try:
-        SECRETS_FILE.parent.mkdir(exist_ok=True)
-        SECRETS_FILE.write_text(f'ANTHROPIC_API_KEY = "{key}"\n', encoding="utf-8")
-    except OSError:
-        pass  # read-only filesystem on Streamlit Cloud — key is already in st.secrets
 
 st.set_page_config(page_title="Resume Tailor AI", page_icon="✦", layout="centered")
 
@@ -180,25 +182,6 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     st.divider()
-
-    saved_key = load_saved_key()
-    api_key = st.text_input(
-        "Anthropic API Key",
-        value=saved_key,
-        type="password",
-        placeholder="sk-ant-...",
-        help="Get yours at console.anthropic.com",
-    )
-
-    if api_key and api_key != saved_key:
-        if st.button("💾 Save key", use_container_width=True):
-            persist_key(api_key)
-            st.success("Key saved — won't ask again!")
-            st.rerun()
-    elif not api_key:
-        st.warning("Add your API key to get started.")
-
-    st.divider()
     st.markdown("""
     <div style="color:#64748b;font-size:13px;line-height:2.2;">
         <span style="color:#3b82f6;font-weight:700;">①</span>&nbsp; Paste or upload your resume<br>
@@ -213,6 +196,15 @@ for k, v in {"step": 1, "needs_generation": False,
              "saved_resume": "", "saved_jd": ""}.items():
     if k not in st.session_state:
         st.session_state[k] = v
+
+api_key = load_saved_key()
+if not api_key:
+    st.error(
+        "No Anthropic API key configured on the server. "
+        "Set the ANTHROPIC_API_KEY environment variable or add it to "
+        ".streamlit/secrets.toml."
+    )
+    st.stop()
 
 # ── Header ────────────────────────────────────────────────────────────────────
 st.markdown("""
@@ -269,15 +261,18 @@ if step == 1:
                 padding:1.5rem 2rem;margin-bottom:1.2rem;">
         <div style="font-size:1.2rem;font-weight:700;color:#f1f5f9;">📋 Your Resume</div>
         <div style="color:#64748b;font-size:0.82rem;margin-top:4px;">
-            Upload a <code style="color:#3b82f6;">.txt</code> file <b>or</b> paste your resume below
+            Upload a <code style="color:#3b82f6;">.txt</code>, <code style="color:#3b82f6;">.pdf</code>, or <code style="color:#3b82f6;">.docx</code> file <b>or</b> paste your resume below
         </div>
     </div>
     """, unsafe_allow_html=True)
 
-    uploaded = st.file_uploader("Upload resume (.txt)", type=["txt"])
+    uploaded = st.file_uploader("Upload resume (.txt, .pdf, .docx)", type=["txt", "pdf", "docx"])
     if uploaded is not None:
         # write into the text-area widget key so it shows in the box
-        st.session_state["resume_area"] = uploaded.read().decode("utf-8")
+        try:
+            st.session_state["resume_area"] = extract_text(uploaded)
+        except Exception as e:
+            st.error(f"Couldn't read that file: {e}")
 
     # initialise text area from whatever was saved before (Back navigation)
     if "resume_area" not in st.session_state:
@@ -326,9 +321,7 @@ elif step == 2:
         if st.button("✨ Generate", use_container_width=True):
             jd_text = st.session_state.get("jd_area", "").strip()
             resume_text = st.session_state.get("saved_resume", "").strip()
-            if not api_key:
-                st.error("Enter your API key in the sidebar first.")
-            elif not resume_text:
+            if not resume_text:
                 st.warning("Resume is missing — go back and add it.")
             elif not jd_text:
                 st.warning("Please paste a job description.")

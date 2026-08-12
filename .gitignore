@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 tailored_resume.md
+.env
+resume.txt
+jd.txt
