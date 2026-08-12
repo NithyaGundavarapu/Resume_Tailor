@@ -286,6 +286,8 @@ indicator = (
     + render_step(2, "Job Description", step)
     + render_line(step > 2)
     + render_step(3, "Tailored Result", step)
+    + render_line(step > 3)
+    + render_step(4, "Download", step)
     + '</div>'
 )
 st.markdown(indicator, unsafe_allow_html=True)
@@ -427,18 +429,48 @@ elif step == 3:
 
         st.markdown("<div style='margin-top:1.5rem;'></div>", unsafe_allow_html=True)
 
-        col_back, col_dl_md, col_dl_docx = st.columns([1, 1, 1])
+        col_back, _, col_next = st.columns([1, 2, 1])
         with col_back:
-            if st.button("← Start Over", use_container_width=True):
-                for k in ["last_output", "needs_generation",
-                          "saved_resume", "saved_jd",
-                          "resume_area", "jd_area"]:
-                    st.session_state.pop(k, None)
-                st.session_state["step"] = 1
+            if st.button("← Back", use_container_width=True):
+                st.session_state["step"] = 2
                 st.rerun()
+        with col_next:
+            if st.button("Continue to Download →", use_container_width=True):
+                st.session_state["step"] = 4
+                st.rerun()
+
+# ── STEP 4 : Download ─────────────────────────────────────────────────────────
+elif step == 4:
+    st.markdown("""
+    <div style="background:#1e293b;border:1px solid #1e3a5f;border-radius:14px;
+                padding:1.5rem 2rem;margin-bottom:1.2rem;">
+        <div style="font-size:1.2rem;font-weight:700;color:#f1f5f9;">⬇️ Download Your Resume</div>
+        <div style="color:#64748b;font-size:0.82rem;margin-top:4px;">
+            Choose Markdown or Word (.docx)
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    output = st.session_state.get("last_output", "")
+    if not output:
+        st.warning("No tailored resume yet — go back and generate one.")
+        if st.button("← Back to Result", use_container_width=False):
+            st.session_state["step"] = 3
+            st.rerun()
+    else:
+        word_count = len(output.split())
+        st.markdown(
+            f'<div style="color:#475569;font-size:12px;margin-bottom:0.8rem;">~{word_count} words</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(output)
+
+        st.markdown("<div style='margin-top:1.5rem;'></div>", unsafe_allow_html=True)
+
+        col_dl_md, col_dl_docx = st.columns([1, 1])
         with col_dl_md:
             st.download_button(
-                "⬇️ Markdown",
+                "⬇️ Markdown (.md)",
                 data=output,
                 file_name="tailored_resume.md",
                 mime="text/markdown",
@@ -452,3 +484,15 @@ elif step == 3:
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 use_container_width=True,
             )
+
+        st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
+
+        col_back, _ = st.columns([1, 3])
+        with col_back:
+            if st.button("← Start Over", use_container_width=True):
+                for k in ["last_output", "needs_generation",
+                          "saved_resume", "saved_jd",
+                          "resume_area", "jd_area"]:
+                    st.session_state.pop(k, None)
+                st.session_state["step"] = 1
+                st.rerun()
